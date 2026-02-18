@@ -12,7 +12,6 @@ export const api = {
     }
   },
 
-  
   post: async (endpoint, body) => {
     try {
       const response = await fetch(`${API_URL}${endpoint}`, {
@@ -27,4 +26,4 @@ export const api = {
       throw error;
     }
   }
-};
+}; 
