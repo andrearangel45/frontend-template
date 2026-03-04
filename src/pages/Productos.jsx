@@ -2,10 +2,17 @@ import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { ShoppingBag, Loader, AlertCircle } from 'lucide-react';
 
+
 const Productos = () => {
   const [productos, setProductos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ nombre: '', descripcion: '', precio: '', stock: '', imagen_url: '' });
+  const [creating, setCreating] = useState(false);
+  const [formError, setFormError] = useState(null);
+  const [formSuccess, setFormSuccess] = useState(null);
 
   useEffect(() => {
     cargarProductos();
@@ -19,6 +26,43 @@ const Productos = () => {
       setError("No se pudo conectar con el servidor. ¿Está encendido?");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    setFormError(null);
+    setFormSuccess(null);
+
+    if (!form.nombre.trim() || !form.precio) {
+      setFormError('Nombre y precio son obligatorios');
+      return;
+    }
+
+    setCreating(true);
+    try {
+      const payload = {
+        nombre: form.nombre,
+        descripcion: form.descripcion,
+        precio: Number(form.precio),
+        stock: Number(form.stock) || 0,
+        imagen_url: form.imagen_url || undefined,
+      };
+      await api.post('/productos', payload);
+      setFormSuccess('Producto creado');
+      setForm({ nombre: '', descripcion: '', precio: '', stock: '', imagen_url: '' });
+      setShowForm(false);
+      setLoading(true);
+      await cargarProductos();
+    } catch {
+      setFormError('Error al crear');
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -40,10 +84,92 @@ const Productos = () => {
         <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-2">
           <ShoppingBag className="text-blue-600" /> Inventario
         </h1>
-        <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">
-          {productos.length} items
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">
+            {productos.length} items
+          </span>
+          <button
+            onClick={() => { setShowForm((s) => !s); setFormError(null); setFormSuccess(null); }}
+            className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-sm"
+          >
+            {showForm ? 'Cerrar' : 'Nuevo Producto'}
+          </button>
+        </div>
       </header>
+
+      {showForm && (
+        <div className="mb-6 bg-white p-6 rounded-lg shadow-sm border">
+          <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Nombre</label>
+              <input
+                name="nombre"
+                value={form.nombre}
+                onChange={handleFormChange}
+                className="w-full px-3 py-2 border rounded"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Precio</label>
+              <input
+                name="precio"
+                value={form.precio}
+                onChange={handleFormChange}
+                type="number"
+                step="0.01"
+                className="w-full px-3 py-2 border rounded"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-slate-700 mb-1">Descripción</label>
+              <textarea
+                name="descripcion"
+                value={form.descripcion}
+                onChange={handleFormChange}
+                className="w-full px-3 py-2 border rounded"
+                rows={3}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Stock</label>
+              <input
+                name="stock"
+                value={form.stock}
+                onChange={handleFormChange}
+                type="number"
+                className="w-full px-3 py-2 border rounded"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">URL imagen (opcional)</label>
+              <input
+                name="imagen_url"
+                value={form.imagen_url}
+                onChange={handleFormChange}
+                className="w-full px-3 py-2 border rounded"
+              />
+            </div>
+            <div className="md:col-span-2 flex items-center gap-3">
+              <button
+                type="submit"
+                disabled={creating}
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              >
+                {creating ? 'Creando...' : 'Crear Producto'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowForm(false)}
+                className="px-4 py-2 rounded border"
+              >
+                Cancelar
+              </button>
+              {formError && <p className="text-red-600 ml-4">{formError}</p>}
+              {formSuccess && <p className="text-green-600 ml-4">{formSuccess}</p>}
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Grid Responsivo: 1 col móvil, 2 tablet, 3 desktop */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -90,5 +216,7 @@ const Productos = () => {
     </div>
   );
 };
+
+
 
 export default Productos;
