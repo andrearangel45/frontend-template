@@ -1,13 +1,13 @@
-import e from 'cors';
-import{Navigate, Outlet} from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 
-const protectedRoute = () => {
+const ProtectedRoute = () => {
     const token = localStorage.getItem('auth_token');
     
-    if(!token){
-        return<Navigate to="/login" replace/>
+    if (!token) {
+        return <Navigate to="/login" replace />;
     }
-    return <Outlet/>
+
+    return <Outlet />;
 };
 
-export default protectedRoute;
+export default ProtectedRoute;
